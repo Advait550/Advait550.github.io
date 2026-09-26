@@ -2,6 +2,7 @@
   const boot = document.getElementById("boot");
   const bootCode = document.getElementById("bootCode");
   let pct = 0;
+
   const bootTimer = setInterval(() => {
     pct += Math.floor(Math.random() * 9) + 4;
     if (pct >= 100) {
@@ -22,6 +23,7 @@
 
   const cursor = document.getElementById("cursorGlow");
   window.addEventListener("pointermove", (e) => {
+    if (window.matchMedia("(pointer:coarse)").matches) return;
     cursor.style.left = e.clientX + "px";
     cursor.style.top = e.clientY + "px";
   }, {passive:true});
@@ -34,8 +36,9 @@
       }
     });
   }, {threshold:0.14});
+
   document.querySelectorAll(".reveal").forEach((el, i) => {
-    el.style.transitionDelay = Math.min(i * 45, 300) + "ms";
+    el.style.transitionDelay = Math.min(i * 35, 260) + "ms";
     observer.observe(el);
   });
 
@@ -54,9 +57,11 @@
     card.addEventListener("pointermove", (e) => {
       if (window.matchMedia("(pointer:coarse)").matches) return;
       const r = card.getBoundingClientRect();
-      const x = (e.clientX - r.left) / r.width - .5;
-      const y = (e.clientY - r.top) / r.height - .5;
-      card.style.transform = "perspective(1000px) rotateX(" + (-y * 4) + "deg) rotateY(" + (x * 5) + "deg) translateY(-4px)";
+      const x = (e.clientX - r.left) / r.width - 0.5;
+      const y = (e.clientY - r.top) / r.height - 0.5;
+      card.style.transform =
+        "perspective(1000px) rotateX(" + (-y * 4) +
+        "deg) rotateY(" + (x * 5) + "deg) translateY(-4px)";
     });
     card.addEventListener("pointerleave", () => card.style.transform = "");
   });
@@ -65,9 +70,9 @@
   const signal = document.getElementById("signalVal");
   let t = 0;
   setInterval(() => {
-    t += .18;
+    t += 0.18;
     const c = Math.round(69 + Math.sin(t) * 10);
-    const s = (97.6 + Math.sin(t * .7) * .7).toFixed(1);
+    const s = (97.6 + Math.sin(t * 0.7) * 0.7).toFixed(1);
     core.textContent = c + "%";
     signal.textContent = s + "%";
   }, 900);
@@ -79,17 +84,43 @@
     "Measure first. Optimize second.",
     "The board is innocent until proven otherwise."
   ];
-  let lineIndex = 0, charIndex = 0, deleting = false;
+  let lineIndex = 0;
+  let charIndex = 0;
+  let deleting = false;
+
   function typeLoop() {
     const line = lines[lineIndex];
-    typed.textContent = deleting ? line.slice(0, charIndex--) : line.slice(0, charIndex++);
+    typed.textContent = deleting
+      ? line.slice(0, charIndex--)
+      : line.slice(0, charIndex++);
+
     if (!deleting && charIndex > line.length + 8) deleting = true;
+
     if (deleting && charIndex < 0) {
       deleting = false;
       charIndex = 0;
       lineIndex = (lineIndex + 1) % lines.length;
     }
+
     setTimeout(typeLoop, deleting ? 28 : 54);
   }
   typeLoop();
+
+  // Demo videos are optional. A project card stays clean until its video exists.
+  document.querySelectorAll("[data-video-card]").forEach((card) => {
+    const path = card.dataset.videoPath;
+    const video = card.querySelector("[data-video]");
+    if (!path || !video) return;
+
+    fetch(path, {method:"HEAD", cache:"no-store"})
+      .then((response) => {
+        if (response.ok) {
+          card.classList.add("video-ready");
+          video.load();
+        }
+      })
+      .catch(() => {
+        // Placeholder remains visible when the demo has not been uploaded yet.
+      });
+  });
 })();
